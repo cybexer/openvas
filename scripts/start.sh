@@ -113,7 +113,7 @@ done
 chmod 666 /tmp/ospd.sock
 
 echo "Starting Greenbone Vulnerability Manager..."
-su -c "gvmd --listen=0.0.0.0 -p 9390" gvm
+su -c "gvmd --max-ips-per-target 70000 --listen=0.0.0.0 -p 9390" gvm
 
 until su -c "gvmd --get-users" gvm; do
 	sleep 1
