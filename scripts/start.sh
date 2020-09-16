@@ -85,8 +85,8 @@ if [ ! -f "/data/firstrun" ]; then
 	touch /data/firstrun
 fi
 
-if [ -f /var/run/ospd/ospd.pid ]; then
-  rm /var/run/ospd/ospd.pid
+if [ -f /var/run/ospd.pid ]; then
+  rm /var/run/ospd.pid
 fi
 
 if [ -S /var/run/ospd/ospd.sock ]; then
