@@ -81,36 +81,26 @@ if [ ! -f "/data/firstrun" ]; then
 	su -c "psql --dbname=gvmd --command='create role dba with superuser noinherit;'" postgres
 	su -c "psql --dbname=gvmd --command='grant dba to gvm;'" postgres
 	su -c "psql --dbname=gvmd --command='create extension \"uuid-ossp\";'" postgres
+	su -c "psql --dbname=gvmd --command='create extension pgcrypto';" postgres
 	touch /data/firstrun
 fi
 
-echo "Updating NVTs..."
-su -c "rsync --compress-level=9 --links --times --omit-dir-times --recursive --partial --quiet rsync://feed.openvas.org:/nvt-feed /usr/local/var/lib/openvas/plugins" openvas-sync
-sleep 5
-
-echo "Updating CERT data..."
-su -c "/cert-data-sync.sh" openvas-sync
-sleep 5
-
-echo "Updating SCAP data..."
-su -c "/scap-data-sync.sh" openvas-sync
-
-if [ -f /var/run/ospd.pid ]; then
-  rm /var/run/ospd.pid
+if [ -f /var/run/ospd/ospd.pid ]; then
+  rm /var/run/ospd/ospd.pid
 fi
 
-if [ -S /tmp/ospd.sock ]; then
-  rm /tmp/ospd.sock
+if [ -S /var/run/ospd/ospd.sock ]; then
+  rm /var/run/ospd/ospd.sock
 fi
 
 echo "Starting Open Scanner Protocol daemon for OpenVAS..."
-ospd-openvas --log-file /usr/local/var/log/gvm/ospd-openvas.log --unix-socket /tmp/ospd.sock --log-level INFO
+ospd-openvas --log-file /usr/local/var/log/gvm/ospd-openvas.log --unix-socket /var/run/ospd/ospd.sock --log-level INFO
 
-while  [ ! -S /tmp/ospd.sock ]; do
+while  [ ! -S /var/run/ospd/ospd.sock ]; do
 	sleep 1
 done
 
-chmod 666 /tmp/ospd.sock
+chmod 666 /var/run/ospd/ospd.sock
 
 echo "Starting Greenbone Vulnerability Manager..."
 su -c "gvmd --max-ips-per-target 70000 --listen=0.0.0.0 -p 9390" gvm
@@ -129,12 +119,34 @@ fi
 if [ ! -f "/data/created_gvm_user" ]; then
 	echo "Creating Greenbone Vulnerability Manager admin user"
 	su -c "gvmd --create-user=${USERNAME} --password=${PASSWORD}" gvm
-	
+
+	echo "Adding import feed rights"
+	su -c "psql -t gvmd -c 'select uuid from users where id = 1' > /tmp/userid" postgres
+	su -c "cat /tmp/userid | xargs --verbose gvmd --modify-setting 78eceaec-3385-11ea-b237-28d24461215b --value " gvm
+
 	touch /data/created_gvm_user
 fi
 
+chown openvas-sync:openvas-sync /usr/local/var/run/feed-update.lock
+
 echo "Starting Greenbone Security Assistant..."
 su -c "gsad --verbose --no-redirect --mlisten=127.0.0.1 --mport 9390 -p 9392 --listen 0.0.0.0" gvm
+
+echo "Updating NVTs..."
+su -c "greenbone-nvt-sync" openvas-sync
+sleep 5
+
+echo "Updating GVMD data..."
+su -c "greenbone-feed-sync --type GVMD_DATA" openvas-sync
+sleep 5
+
+echo "Updating CERT data..."
+su -c "/cert-data-sync.sh" openvas-sync
+sleep 5
+
+echo "Updating SCAP data..."
+su -c "/scap-data-sync.sh" openvas-sync
+sleep 5
 
 echo "++++++++++++++++++++++++++++++++++++++++++++++"
 echo "+ Your GVM 11 container is now ready to use! +"

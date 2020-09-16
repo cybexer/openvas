@@ -9,14 +9,14 @@ COPY certs/ /certs/
 RUN bash /install-pkgs.sh
 RUN rm -f /usr/bin/python3 && ln -s /usr/bin/python3.8 /usr/bin/python3
 
-ENV gvm_libs_version="v11.0.1" \
-    openvas_scanner_version="v7.0.1" \
-    gvmd_version="v9.0.1" \
-    gsa_version="v9.0.1" \
-    gvm_tools_version="v2.0.1" \
+ENV gvm_libs_version="v20.8.0" \
+    openvas_scanner_version="v20.8.0" \
+    gvmd_version="v20.8.0" \
+    gsa_version="v20.8.0" \
+    gvm_tools_version="v2.1.0" \
     openvas_smb="v1.0.5" \
-    open_scanner_protocol_daemon="v2.0.1" \
-    ospd_openvas="v1.0.1" \
+    open_scanner_protocol_daemon="v20.8.1" \
+    ospd_openvas="v20.8.0" \
     python_gvm_version="v1.6.0"
 
 RUN echo "Starting Build..." && mkdir /build
@@ -56,7 +56,7 @@ RUN cd /build && \
     #
     # Install Greenbone Vulnerability Manager (GVMD)
     #
-    
+
 RUN cd /build && \
     wget --no-verbose https://github.com/greenbone/gvmd/archive/$gvmd_version.tar.gz && \
     tar -zxf $gvmd_version.tar.gz && \
