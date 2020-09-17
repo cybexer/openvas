@@ -136,16 +136,16 @@ echo "Updating NVTs..."
 su -c "greenbone-nvt-sync" openvas-sync
 sleep 5
 
-echo "Updating GVMD data..."
-su -c "greenbone-feed-sync --type GVMD_DATA" openvas-sync
-sleep 5
-
 echo "Updating CERT data..."
 su -c "/cert-data-sync.sh" openvas-sync
 sleep 5
 
 echo "Updating SCAP data..."
 su -c "/scap-data-sync.sh" openvas-sync
+sleep 5
+
+echo "Updating GVMD data..."
+su -c "greenbone-feed-sync --type GVMD_DATA" openvas-sync
 sleep 5
 
 echo "++++++++++++++++++++++++++++++++++++++++++++++"
