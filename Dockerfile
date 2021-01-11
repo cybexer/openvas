@@ -1,33 +1,35 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
-
+EXPOSE 9392
 COPY install-pkgs.sh /install-pkgs.sh
-COPY certs/ /certs/
 
 RUN bash /install-pkgs.sh
-RUN rm -f /usr/bin/python3 && ln -s /usr/bin/python3.8 /usr/bin/python3
 
 ENV gvm_libs_version="v20.8.0" \
     openvas_scanner_version="v20.8.0" \
     gvmd_version="v20.8.0" \
     gsa_version="v20.8.0" \
-    gvm_tools_version="v2.1.0" \
-    openvas_smb="v1.0.5" \
     open_scanner_protocol_daemon="v20.8.1" \
     ospd_openvas="v20.8.0" \
+    gvm_tools_version="v2.1.0" \
+    openvas_smb="v1.0.5" \
     python_gvm_version="v1.6.0"
 
-RUN echo "Starting Build..." && mkdir /build
+
 
     #
     # install libraries module for the Greenbone Vulnerability Management Solution
     #
     
-RUN cd /build && \
+RUN echo "Starting Build..." && rm -rf /build &&\
+    mkdir -p /build && \
+    cd /build && \
+    pwd && \
     wget --no-verbose https://github.com/greenbone/gvm-libs/archive/$gvm_libs_version.tar.gz && \
     tar -zxf $gvm_libs_version.tar.gz && \
+    ls -l /build/ && \
     cd /build/*/ && \
     mkdir build && \
     cd build && \
@@ -56,7 +58,7 @@ RUN cd /build && \
     #
     # Install Greenbone Vulnerability Manager (GVMD)
     #
-
+    
 RUN cd /build && \
     wget --no-verbose https://github.com/greenbone/gvmd/archive/$gvmd_version.tar.gz && \
     tar -zxf $gvmd_version.tar.gz && \
@@ -104,8 +106,15 @@ RUN cd /build && \
     #
     # Install Greenbone Vulnerability Management Python Library
     #
+RUN python3 -m pip install python-gvm==$python_gvm_version
     
-RUN python3 -m pip install python-gvm
+#RUN cd /build && \
+    #wget --no-verbose https://github.com/greenbone/python-gvm/archive/$python_gvm_version.tar.gz && \
+    #tar -zxf $python_gvm_version.tar.gz && \
+    #cd /build/*/ && \
+    #python3 setup.py install && \
+    #cd /build && \
+    #rm -rf *
     
     #
     # Install Open Scanner Protocol daemon (OSPd)
@@ -117,9 +126,7 @@ RUN cd /build && \
     cd /build/*/ && \
     python3 setup.py install && \
     cd /build && \
-    rm -rf * && \
-    mkdir /var/run/ospd
-
+    rm -rf *
     
     #
     # Install Open Scanner Protocol for OpenVAS
@@ -136,20 +143,15 @@ RUN cd /build && \
     #
     # Install GVM-Tools
     #
-    
-RUN python3 -m pip install gvm-tools && \
-    echo "/usr/local/lib" > /etc/ld.so.conf.d/openvas.conf && ldconfig && cd / && rm -rf /build
+RUN python3 -m pip install gvm-tools==$gvm_tools_version && \
+    echo "/usr/local/lib" > /etc/ld.so.conf.d/openvas.conf && ldconfig  
 
-    #
-    # Create HTTPS connection data
+    # 
+    # Make sure all libraries are linked and add a random directory suddenly needed by ospd :/
     #
 
-RUN mkdir /usr/local/var/lib/gvm/CA && \
-    mkdir -p /usr/local/var/lib/gvm/private/CA && \
-    cp /certs/private/* /usr/local/var/lib/gvm/private/CA/ && \
-    cp /certs/CA/* /usr/local/var/lib/gvm/CA/ && \
-    chmod 644 /usr/local/var/lib/gvm/private/CA/* && \
-    chmod 644 /usr/local/var/lib/gvm/CA/*
+RUN ldconfig && \
+    mkdir /var/run/ospd
 
 COPY scripts/* /
 

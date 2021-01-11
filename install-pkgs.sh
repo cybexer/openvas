@@ -1,17 +1,17 @@
 #!/bin/bash
+apt-get update
+apt-get install -y gnupg curl
+
+echo "deb http://apt.postgresql.org/pub/repos/apt focal-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 
 apt-get update
-apt-get install software-properties-common -yq --no-install-recommends  && \
-add-apt-repository ppa:deadsnakes/ppa && \
-apt-get install python3.8 -yq --no-install-recommends
-update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
-
+apt-get upgrade -y
 
 { cat <<EOF
 bison
 build-essential
 ca-certificates
-gpg-agent
 cmake
 curl
 gcc
@@ -27,8 +27,9 @@ libgnutls28-dev
 libgpgme11-dev
 libgpgme-dev
 libhiredis-dev
-libical2-dev
+libical-dev
 libksba-dev
+libldap2-dev
 libmicrohttpd-dev
 libnet-snmp-perl
 libpcap-dev
@@ -36,40 +37,42 @@ libpopt-dev
 libsnmp-dev
 libssh-gcrypt-dev
 libxml2-dev
+locales-all
+mailutils
 net-tools
 nmap
 nsis
 openssh-client
-python3-pip
-python3.8-dev
+openssh-server
 perl-base
 pkg-config
-postgresql
-postgresql-contrib
-postgresql-server-dev-all
+postfix
+postgresql-12
+postgresql-server-dev-12
+python3-defusedxml
+python3-dialog
+python3-lxml
+python3-paramiko
+python3-pip
+python3-polib
+python3-psutil
+python3-setuptools
 redis-server
 redis-tools
 rsync
 smbclient
-software-properties-common
+sshpass
 texlive-fonts-recommended
 texlive-latex-extra
 uuid-dev
 wapiti
 wget
+whiptail
+xml-twig-tools
 xsltproc
 EOF
 } | xargs apt-get install -yq --no-install-recommends
 
-# Install python modules
-python3.8 -m pip install defusedxml
-python3.8 -m pip install dialog
-python3.8 -m pip install lxml
-python3.8 -m pip install paramiko
-python3.8 -m pip install polib
-python3.8 -m pip install psutil
-python3.8 -m pip install setuptools
-python3.8 -m pip install distutils
 
 # Install Node.js
 curl -sL https://deb.nodesource.com/setup_10.x | bash -
@@ -77,9 +80,10 @@ apt-get install nodejs -yq --no-install-recommends
 
 
 # Install Yarn
-curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
 echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
-apt-get update && apt-get install yarn -yq --no-install-recommends && yarn install && yarn upgrade caniuse-lite browserlist
+apt-get update
+apt-get install yarn -yq --no-install-recommends
 
 
 rm -rf /var/lib/apt/lists/*
