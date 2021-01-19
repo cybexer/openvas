@@ -3,6 +3,7 @@ FROM ubuntu:20.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 EXPOSE 9392
+EXPOSE 9390
 COPY install-pkgs.sh /install-pkgs.sh
 
 RUN bash /install-pkgs.sh

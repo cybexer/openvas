@@ -18,8 +18,8 @@ if  [ -S /run/redis/redis.sock ]; then
 fi
 # Does redis need to be bound to 0.0.0.0 or will it work with just local host?
 redis-server --unixsocket /run/redis/redis.sock --unixsocketperm 700 \
-             --timeout 0 --databases $REDISDBS --maxclients 4096 --daemonize yes \
-             --port 6379 --bind 0.0.0.0
+             --timeout 0 --databases $REDISDBS --maxclients 10000 --daemonize yes \
+             --port 6379 --bind 0.0.0.0 --logfile /var/log/redis/redis-server.log --loglevel notice
 
 echo "Wait for redis socket to be created..."
 while  [ ! -S /run/redis/redis.sock ]; do
@@ -110,7 +110,7 @@ if [ ! -f "/data/setup" ]; then
 	su -c "psql --dbname=gvmd --command='create extension \"pgcrypto\";'" postgres
 	chown postgres:postgres -R /data/database
 	su -c "/usr/lib/postgresql/12/bin/pg_ctl -D /data/database restart" postgres
-	if [ ! /data/var-lib/gvm/CA/servercert.pem ]; then
+	if [ ! -f /data/var-lib/gvm/CA/servercert.pem ]; then
 		echo "Generating certs..."
     	gvm-manage-certs -a
 	fi
@@ -121,6 +121,8 @@ fi
 
 chown gvm:gvm -R /usr/local/var/lib/gvm
 chmod 770 -R /usr/local/var/lib/gvm
+chmod 770 -R /usr/local/var/lib/openvas
+chown gvm:gvm -R /usr/local/var/lib/openvas
 chown gvm:gvm -R /usr/local/var/log/gvm
 chown gvm:gvm -R /usr/local/var/run	
 
@@ -131,7 +133,7 @@ if [ -d /usr/local/var/lib/gvm/data-objects/gvmd/20.08/report_formats ]; then
 	done
 fi
 
-
+# Migrate to new db version just in case
 su -c "gvmd --migrate" gvm
 
 echo "Updating NVTs and other data"
@@ -187,7 +189,7 @@ else
 fi
 
 echo "Starting Greenbone Vulnerability Manager..."
-su -c "gvmd --osp-vt-update=/tmp/ospd.sock" gvm
+su -c "gvmd --osp-vt-update=/tmp/ospd.sock --max-ips-per-target 70000 --listen=0.0.0.0 -p 9390" gvm
 
 until su -c "gvmd --get-users" gvm; do
 	echo "Waiting for gvmd"
@@ -258,7 +260,7 @@ fi
 
 
 echo "Starting Greenbone Security Assistant..."
-su -c "gsad --verbose --http-only --no-redirect --port=9392" gvm
+su -c "gsad --verbose --no-redirect --no-redirect --mlisten=127.0.0.1 --mport 9390 --listen 0.0.0.0 --port=9392" gvm
 GVMVER=$(su -c "gvmd --version" gvm ) 
 echo "++++++++++++++++++++++++++++++++++++++++++++++"
 echo "+ Your GVM/openvas/postgresql container is now ready to use! +"
